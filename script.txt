@@ -1,0 +1,131 @@
+Sub CalculateYearlySummaryForAllSheets()
+
+    Dim ws As Worksheet
+
+    ' loop sheets in wb
+    For Each ws In ThisWorkbook.Worksheets
+        CalculateYearlySummary ws
+    Next ws
+
+End Sub
+
+Sub CalculateYearlySummary(ws As Worksheet)
+
+    
+    Dim lastRow As Long
+    Dim summaryRow As Long
+    Dim i As Long
+    Dim ticker As String
+    Dim yearlyOpen As Double
+    Dim yearlyClose As Double
+    Dim yearlyChange As Double
+    Dim percentChange As Double
+    Dim totalVolume As Double
+
+    ' Find the last row
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+
+    ' Set the initial summary row
+    summaryRow = 2
+
+    ' Add column headers
+    ws.Cells(1, 9).Value = "Ticker"
+    ws.Cells(1, 10).Value = "Yearly Change"
+    ws.Cells(1, 11).Value = "Percent Change"
+    ws.Cells(1, 12).Value = "Total Stock Volume"
+
+    ' Loop through all the rows in the data
+    For i = 2 To lastRow
+
+        If ws.Cells(i + 1, 1).Value <> ws.Cells(i, 1).Value Then
+            ticker = ws.Cells(i, 1).Value
+            yearlyClose = ws.Cells(i, 6).Value
+            yearlyChange = yearlyClose - yearlyOpen
+
+            If yearlyOpen <> 0 Then
+                percentChange = (yearlyChange / yearlyOpen) * 100
+            Else
+                percentChange = 0
+            End If
+
+            totalVolume = totalVolume + ws.Cells(i, 7).Value
+
+            ' Output data
+            ws.Cells(summaryRow, 9).Value = ticker
+            ws.Cells(summaryRow, 10).Value = yearlyChange
+            ws.Cells(summaryRow, 11).Value = percentChange & "%"
+            ws.Cells(summaryRow, 12).Value = totalVolume
+
+            '  formatting
+            With ws.Cells(summaryRow, 10).FormatConditions
+                .Delete
+                .Add Type:=xlCellValue, Operator:=xlGreater, Formula1:="=0"
+                .Item(1).Interior.Color = RGB(0, 255, 0)
+                .Add Type:=xlCellValue, Operator:=xlLess, Formula1:="=0"
+                .Item(2).Interior.Color = RGB(255, 0, 0)
+            End With
+
+            ' Reset the values
+            yearlyOpen = ws.Cells(i + 1, 3).Value
+            totalVolume = 0
+            summaryRow = summaryRow + 1
+
+        Else
+            If i = 2 Then
+                yearlyOpen = ws.Cells(i, 3).Value
+            End If
+            totalVolume = totalVolume + ws.Cells(i, 7).Value
+        End If
+
+    Next i
+
+    ' Add headers
+    ws.Cells(2, 14).Value = "Greatest % Increase"
+    ws.Cells(3, 14).Value = "Greatest % Decrease"
+    ws.Cells(4, 14).Value = "Greatest Total Volume"
+    ws.Cells(1, 15).Value = "Ticker"
+    ws.Cells(1, 16).Value = "Value"
+
+    ' Find the greatest values
+        lastRow = ws.Cells(ws.Rows.Count, 9).End(xlUp).Row
+
+    ' Set initial values for comparisons
+    Dim greatestPercentIncrease As Double
+    Dim greatestPercentDecrease As Double
+    Dim greatestTotalVolume As Double
+    Dim greatestPercentIncreaseTicker As String
+    Dim greatestPercentDecreaseTicker As String
+    Dim greatestTotalVolumeTicker As String
+
+    greatestPercentIncrease = 0
+    greatestPercentDecrease = 0
+    greatestTotalVolume = 0
+
+    ' Loop through the summary data
+    For i = 2 To lastRow
+        If ws.Cells(i, 11).Value > greatestPercentIncrease Then
+            greatestPercentIncrease = ws.Cells(i, 11).Value
+            greatestPercentIncreaseTicker = ws.Cells(i, 9).Value
+        End If
+
+        If ws.Cells(i, 11).Value < greatestPercentDecrease Then
+            greatestPercentDecrease = ws.Cells(i, 11).Value
+            greatestPercentDecreaseTicker = ws.Cells(i, 9).Value
+        End If
+
+        If ws.Cells(i, 12).Value > greatestTotalVolume Then
+            greatestTotalVolume = ws.Cells(i, 12).Value
+            greatestTotalVolumeTicker = ws.Cells(i, 9).Value
+        End If
+    Next i
+
+    ' Output the greatest values
+    ws.Cells(2, 15).Value = greatestPercentIncreaseTicker
+    ws.Cells(3, 15).Value = greatestPercentDecreaseTicker
+    ws.Cells(4, 15).Value = greatestTotalVolumeTicker
+    ws.Cells(2, 16).Value = greatestPercentIncrease & "%"
+    ws.Cells(3, 16).Value = greatestPercentDecrease & "%"
+    ws.Cells(4, 16).Value = greatestTotalVolume
+
+End Sub
+
